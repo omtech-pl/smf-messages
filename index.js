@@ -8,7 +8,8 @@ const prepareData = (htmlValue, lang) => ({
   model: config.openai.model,
   messages: [{
     role: config.openai.role,
-    content: `IF NEEDS TRANSLATE ${htmlValue} TO ${lang} LANGUAGE. RETURN TRANSLATED HTML`
+    content: `IF NEEDS TRANSLATE ${htmlValue} TO ${lang} LANGUAGE. RETURN TRANSLATED HTML. 
+    If the text language is ${defaultLang}, leave it untranslated`
   }],
   temperature: config.openai.temperature
 });
@@ -42,6 +43,7 @@ const sendToOpenAi = async data => {
 const submitForm = async (e, type, title, html, dateFrom, timeFrom, dateTo, timeTo, companyId, state, languages) => {
   e.preventDefault();
   listLangs.replaceChildren();
+  errors.replaceChildren();
 
   console.log(`
 type: ${type.value}
@@ -97,9 +99,13 @@ VALUES (
           modal.innerHTML = listItem.dataset.content;
           html.value = listItem.dataset.content;
         });
-        modal.innerHTML = message;
-        html.value = message;
-        sql.value += `'${message}', `
+        modal.innerHTML = message || 'Error';
+        html.value = message || 'Error';
+        sql.value += `'${message || null}', `
+        if (!message) {
+          listLangs.removeChild(listItem);
+          errors.innerHTML += `<li class="text-red-500"><span class="line-through">${lang}</span>  ✕  Error: HTTP error! status: 401</li>`;
+        }
 
         if (i == langs.length - 1) {
           const now = new Date();
