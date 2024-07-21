@@ -4,6 +4,46 @@ const defaultLang = config.defaultLang;
 modal.innerHTML = content[type.value];
 html.value = content[type.value];
 
+let hasChild = (parent, selector) => parent.querySelector(selector) != null;
+
+const updateSQL = (e, type, title, html, dateFrom, timeFrom, dateTo, timeTo, companyId, state, languages) => {
+
+  if (!languages) {
+    console.error('Languages is undefined or null');
+    return;
+  }
+
+  const keys = Object.keys(languages);
+  const langs = Object.values(languages);
+
+  const getFields = () => {
+    let fields = keys.map(key => (key !== defaultLang ? `content_${key}` : 'content'));
+    return fields.join(', ');
+  };
+
+  sql.value = `INSERT INTO smf_messages (${getFields()}, company_id, title, type, date_from, date_to, created_at, status)
+VALUES (
+`;
+  for (let i = 0; i < langs.length; i++) {
+    let message = listLangs.children[i].dataset.content;
+    message = message.replace(/'/g, '`');
+    sql.value += `'${message || null}', `
+  }
+  const now = new Date();
+  const formattedDate = now.toISOString().replace('T', ' ').substring(0, 23);
+  setLoadingState(false);
+
+  sql.value += `
+${companyId.value || null}, 
+'${title.value}', 
+${type.value || 0}, 
+${dateFrom.value ? `'${dateFrom.value} ${timeFrom.value}:00.000'` : null},
+${dateTo.value ? `'${dateTo.value} ${timeTo.value}:00.000'` : null},
+'${formattedDate}',
+${state.checked});`
+
+};
+
 const prepareData = (htmlValue, lang) => ({
   model: config.openai.model,
   messages: [{
@@ -30,8 +70,8 @@ const sendToOpenAi = async data => {
     }
 
     const result = await response.json();
-    let translatedContent = result.choices?.find(choice => choice?.message)?.message.content || 
-    'Translation failed or no content received'; 
+    let translatedContent = result.choices?.find(choice => choice?.message)?.message.content ||
+      'Translation failed or no content received';
     translatedContent = translatedContent.replace(/'/g, '`');
 
     return translatedContent;
@@ -54,7 +94,7 @@ timeFrom: ${timeFrom.value}
 dateTo: ${dateTo.value}
 timeTo: ${timeTo.value}
 companyId: ${companyId.value}
-state: ${state.value}
+state: ${state.checked}
   `);
 
   if (html.value.trim()) {
@@ -66,7 +106,7 @@ state: ${state.value}
       const fields = keys.map(key => (key !== defaultLang ? `content_${key}` : 'content'));
       return fields.join(', ');
     };
-    
+
     sql.value = `INSERT INTO smf_messages (${getFields()}, company_id, title, type, date_from, date_to, created_at, status)
 VALUES (
 `;
@@ -76,26 +116,26 @@ VALUES (
       type.classList.add('disabled');
       const lang = langs[i]
       const data = prepareData(html.value, lang);
-      
+
       const listItem = document.createElement('li');
       listItem.className = 'text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 font-medium rounded-full text-[14px] px-2.5 py-1.5 me-2 mb-2 text-orange-500 dark:bg-gray-800 dark:text-orange-400 dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700 cursor-pointer';
       listItem.textContent = lang;
       listLangs.appendChild(listItem);
-    
+
       try {
         const message = await sendToOpenAi(data);
         listItem.dataset.content = message;
         listItem.classList.replace('dark:text-orange-400', 'dark:text-green-400');
         listItem.classList.replace('text-orange-500', 'text-green-600');
-        
+
         listItem.addEventListener('click', () => {
-  
+
           const activeItem = document.querySelector('.active');
           if (activeItem && activeItem !== listItem) {
-              activeItem.classList.remove('active');
+            activeItem.classList.remove('active');
           }
           listItem.classList.add('active');
-  
+
           modal.innerHTML = listItem.dataset.content;
           html.value = listItem.dataset.content;
         });
@@ -112,6 +152,7 @@ VALUES (
           const formattedDate = now.toISOString().replace('T', ' ').substring(0, 23);
           setLoadingState(false);
           listLangs.classList.remove('disabled');
+          listItem.classList.add('active');
           type.classList.remove('disabled');
 
           sql.value += `
@@ -145,17 +186,22 @@ const copySQL = () => {
 };
 
 document.addEventListener('keyup', e => {
-  const { id, value } = e.target;
+  const {
+    id,
+    value
+  } = e.target;
   const activeItem = document.querySelector('.active');
 
   switch (id) {
     case 'html':
       modal.innerHTML = value;
       if (activeItem) activeItem.dataset.content = value;
+      if (hasChild(listLangs, 'li')) updateSQL(e, type, title, html, dateFrom, timeFrom, dateTo, timeTo, companyId, state, languages)
       break;
     case 'modal':
       html.value = modal.innerHTML;
       if (activeItem) activeItem.dataset.content = modal.innerHTML;
+      if (hasChild(listLangs, 'li')) updateSQL(e, type, title, html, dateFrom, timeFrom, dateTo, timeTo, companyId, state, languages)
       break;
     case 'title':
       modalTitle.textContent = value;
@@ -167,7 +213,10 @@ document.addEventListener('keyup', e => {
 });
 
 document.addEventListener('change', e => {
-  const { id, value } = e.target;
+  const {
+    id,
+    value
+  } = e.target;
   const activeItem = document.querySelector('.active');
 
   switch (id) {
@@ -199,7 +248,7 @@ document.addEventListener('click', async e => {
     case 'submit':
       submitForm(e, type, title, html, dateFrom, timeFrom, dateTo, timeTo, companyId, state, languages);
       break;
-    case 'copyBtn': 
+    case 'copyBtn':
       copySQL();
       break;
   }
@@ -236,7 +285,7 @@ const setLoadingState = isLoading => {
   }
 };
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
   const dateInput = document.getElementById('dateFrom');
   const today = new Date();
   const formattedDate = today.toISOString().split('T')[0];
