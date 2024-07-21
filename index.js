@@ -1,6 +1,16 @@
 document.addEventListener('keyup', e => {
-    if(e.target.id === 'html') modal.innerHTML = html.value;
-    if(e.target.id === 'modal') html.value =  modal.innerHTML;
-    if(e.target.id === 'title') modalTitle.textContent = title.value;;
-    if(e.target.id === 'modalTitle') title.value =  modalTitle.textContent;
+  switch (e.target.id) {
+    case 'html':
+      modal.innerHTML = html.value;
+      break;
+    case 'modal':
+      html.value = modal.innerHTML;
+      break;
+    case 'title':
+      modalTitle.textContent = title.value;
+      break;
+    case 'modalTitle':
+      title.value = modalTitle.textContent;
+      break;
+  }
 });
