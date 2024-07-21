@@ -1,6 +1,8 @@
 const languages = config.langs;
 const defaultLang = config.defaultLang;
 
+config.openai.apikey = localStorage.getItem('openai-apikey');
+
 modal.innerHTML = content[type.value];
 html.value = content[type.value];
 
