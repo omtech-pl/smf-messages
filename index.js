@@ -1,5 +1,6 @@
 const languages = config.langs;
 const defaultLang = config.defaultLang;
+const defaultLanguageName = config.langs[defaultLang];
 
 config.openai.apikey = localStorage.getItem('openai-apikey');
 
@@ -50,8 +51,7 @@ const prepareData = (htmlValue, lang) => ({
   model: config.openai.model,
   messages: [{
     role: config.openai.role,
-    content: `IF NEEDS TRANSLATE ${htmlValue} TO ${lang} LANGUAGE. RETURN TRANSLATED HTML. 
-    If the text language is ${defaultLang}, leave it untranslated`
+    content: `IF NEEDS TRANSLATE ${htmlValue} TO ${lang} LANGUAGE. RETURN TRANSLATED HTML.`
   }],
   temperature: config.openai.temperature
 });
@@ -128,7 +128,7 @@ VALUES (
       listLangs.appendChild(listItem);
 
       try {
-        const message = await sendToOpenAi(data);
+        const message = lang !== defaultLanguageName ? await sendToOpenAi(data): html.value;
         listItem.dataset.content = message;
         listItem.classList.replace('dark:text-orange-400', 'dark:text-green-400');
         listItem.classList.replace('text-orange-500', 'text-green-600');
