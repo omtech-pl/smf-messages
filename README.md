@@ -1,1 +1,1 @@
-# smf-translator
+# smf-messages
